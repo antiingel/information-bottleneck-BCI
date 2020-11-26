@@ -50,7 +50,7 @@ class ModelTrainer(object):
         self.recordings = data
         self.labels = labels
         # Check before testing!!
-        self.t_use_ml = True#ROLL
+        self.t_use_ml = True
         self.t_use_maf_on_features = False
         self.t_use_maf_on_probas = False and self.t_use_ml
         self.t_normalise_probas = False and self.t_use_ml
@@ -151,8 +151,6 @@ class ModelTrainer(object):
     def printConfusionMatrixData(self, confusion_matrix):
         accuracy = self.calculateAccuracyIgnoringLastColumn(confusion_matrix)
         prediction_probability = self.calculatePredictionProbability(confusion_matrix)
-        # print "Proposed ITR:",
-        # print self.itr_calculator_prob.itrMiFromMatrix(confusion_matrix)
         print("ITR from matrix per prediction")
         print(self.calculate_mi(confusion_matrix))
         print("ITR from matrix per min")
@@ -171,9 +169,6 @@ class ModelTrainer(object):
             return map(lambda x: x[1:-1], split_labels)
         else:
             return split_labels
-
-    # def modifyTrainingLabels(self, use_maf, training_labels):
-    #     return self.modifySplitLabels(use_maf, training_labels)
 
     def getMafLength(self, use_maf):
         return 3 if use_maf else 1
@@ -228,7 +223,6 @@ class ModelTrainer(object):
     def removeSamplesBeforeAfterClassChange(self, split_data, split_labels):
         class_change = map(lambda x: np.where(x[:-1] != x[1:])[0], split_labels)
         samples_to_remove = map(lambda y: np.concatenate(map(lambda x: [x, x+1], y)), class_change)
-        # print map(lambda (x,y): list(x[i] for i in y), zip(split_labels, samples_to_remove))
         return (
             np.array(self.removeSamples(split_data, samples_to_remove)),
             np.array(self.removeSamples(split_labels, samples_to_remove))
@@ -295,10 +289,6 @@ class ModelTrainer(object):
                 return max_idx
             else:
                 return 0
-            # if len(set(labels)) == 1 and label in labels:
-            #     return label
-            # else:
-            #     return 0
 
     def calculate_mi(self, confusion_matrix):
         mi = 0
@@ -312,9 +302,7 @@ class ModelTrainer(object):
         return mi
 
     def start(self, subject, make_plots):
-        # split_data, split_labels = self.splitAndRollData()  # Hacky
-        split_data, split_labels = self.splitTrainingData()  # Hacky
-        # split_data, split_labels = self.removeClass(split_data, split_labels, 3)
+        split_data, split_labels = self.splitTrainingData()
         training_confusion_matrices = 0.0
         testing_confusion_matrices = 0.0
 
@@ -329,8 +317,6 @@ class ModelTrainer(object):
             split_labels_proba = split_labels
         assert len(split_data) > 1
         testing_predictions = []
-        # label_order1 = sorted(set(split_labels[0]))
-        # split_class_count = map(lambda x: self.countClasses([1,2,3], x), split_labels_proba)
         print("Starting 5-fold cross-validation")
         for test_data_index in range(len(split_data)):
             fold_nr = str(test_data_index+1)
@@ -338,39 +324,26 @@ class ModelTrainer(object):
             split_training_data = self.allExceptOne(split_data, test_data_index)
             split_training_labels = self.allExceptOne(split_labels, test_data_index)
             split_training_labels_proba = self.allExceptOne(split_labels_proba, test_data_index)
-            # split_training_class_count = self.allExceptOne(split_class_count, test_data_index)
             training_data = np.concatenate(split_training_data, 0)
             training_labels = np.concatenate(split_training_labels, 0)
             testing_data = split_data[test_data_index]
             testing_labels = split_labels[test_data_index]
             testing_labels_proba = split_labels_proba[test_data_index]
-            # label_converter = self.getLabelConverter(label_order)
-            # rolled_split_modified_training_labels = self.rollLabels(label_converter, split_modified_training_labels)
             n_folds = len(split_training_data)
             tr_prediction = self.calculateTrainingFeatures(n_folds, self.cv_model, split_training_data, split_training_labels)
             if self.t_remove_samples_probas:
                 tr_prediction, split_training_labels_proba = self.removeSamplesBeforeAfterClassChange(tr_prediction, split_training_labels_proba)
-            # label_order = self.getLabelOrder(self.cv_model)
-            # training_roc, training_prc = self.calculateCurves(
-            #     n_folds,
-            #     tr_prediction,
-            #     split_training_labels_proba,
-            #     label_order
-            # )
-            # training_prcs.append(training_prc)
-            # training_rocs.append(training_roc)
+
             all_training_data = np.concatenate(tr_prediction, 0)
             all_training_lables = np.concatenate(split_training_labels_proba, 0)
             all_training_data = [all_training_data[np.where(all_training_lables == i)] for i in range(1,4)]
             # (class, feature_value, feature_index)
             all_training_data = np.array(all_training_data)
-            # min_feature = np.min(all_training_data)
-            # max_feature = np.max(all_training_data)
 
             skew = False
             plot_hist_skew = False
             plot_3d = False
-            save_folder = None #"./results1Fa/"
+            save_folder = None
 
             n_bins = 30
             same_range = False
@@ -399,7 +372,6 @@ class ModelTrainer(object):
             bin_edges = []
             for f in range(n_classes):
                 bin_edges.append(np.linspace(min_features_f[f], max_features_f[f], n_binss[f]))
-            # bin_edges = np.array(bin_edges)
 
             histogram = []
             min_features = []
@@ -407,7 +379,6 @@ class ModelTrainer(object):
             parameters = []
             for i in range(n_classes):
                 hist_row = []
-                # bin_row = []
                 min_features_row = []
                 max_features_row = []
                 parameters_row = []
@@ -415,31 +386,19 @@ class ModelTrainer(object):
                     data = all_training_data[i,:,j]
                     hist, _ = np.histogram(data, bins=bin_edges[j], density=True)
                     hist_row.append(np.array([0] + list(hist) + [0]))
-                    # bin_row.append(bins)
                     min_features_row.append(np.min(data))
                     max_features_row.append(np.max(data))
                     if skew:
-                        # bins_centre = self.moving_average(bin_edges[j], 2)
-                        # initial_guess = [0, np.mean(data), np.std(data)]
-                        # param = scipy.optimize.curve_fit(self.func, bins_centre, hist, p0=initial_guess, maxfev=500000)[0]
                         param = skewnorm.fit(data)
                         parameters_row.append(param)
                 histogram.append(hist_row)
-                # bin_edges.append(bin_row)
                 min_features.append(min_features_row)
                 max_features.append(max_features_row)
                 parameters.append(parameters_row)
-            # (class, feature_index, histogram_values)
-            # histogram = np.array(histogram)
-            # bin_edges = np.array(bin_edges)
             min_features = np.array(min_features)
             max_features = np.array(max_features)
-            # histogram = np.multiply(histogram, ((max_features-min_features)/n_bins).reshape(3,3,1))
             histogram = [[histogram[i][j]/np.sum(histogram[i][j]) for j in range(n_classes)] for i in range(n_classes)]
-            # histogram = [[histogram[i][j]*(max_features[i][j]-min_features[i][j])/n_binss[j] for j in range(n_classes)] for i in range(n_classes)]
-            # histogram = np.multiply(histogram, (np.divide(max_features-min_features, n_binss.reshape(3,1))).reshape(3,3,1))
             parameters = np.array(parameters)
-            # print(np.array([[sum(histogram[i][j]) for j in range(n_classes)] for i in range(n_classes)]))
 
             if plot_hist_skew:
                 for c in range(n_classes):
@@ -447,7 +406,6 @@ class ModelTrainer(object):
                         plt.subplot(n_classes, n_classes, c*n_classes+f+1)
                         plt.xlim(np.min(min_features), np.max(max_features))
                         plt.title(str(c)+" "+str(f))
-                        # plt.ylim(0, 0.6)
                         plt.hist(all_training_data[c,:,f], bins=bin_edges[f], density=True)
                         points = np.linspace(min_features[c][f], max_features[c][f], 100)
                         plt.plot(points, self.func(points, *parameters[c][f]))
@@ -468,8 +426,6 @@ class ModelTrainer(object):
 
                 if plot_3d:
                     plot_location = intervals_all.copy()
-                    # step = x[1] - x[0]
-                    # plot_location[np.where(plot_location == np.inf)] = x[-1] + step
                     plot_location[np.where(plot_location == -np.inf)] = x[0]
                     plot_location = plot_location[:, :, 0]
             else:
@@ -501,25 +457,9 @@ class ModelTrainer(object):
                 intervals_all = np.array(intervals_all)
                 intervals_all_inf = np.array(intervals_all_inf)
 
-                # intervals_all = []
-                # for i in range(n_classes):
-                #     intervals_all_row = []
-                #     for i1, v1 in enumerate(bin_edges[i][0][:-1]):
-                #         for i2, v2 in enumerate(bin_edges[i][1][:-1]):
-                #             for i3, v3 in enumerate(bin_edges[i][2][:-1]):
-                #                 intervals_all_row.append((
-                #                     (bin_edges[i][0][i1], bin_edges[i][0][i1+1]),
-                #                     (bin_edges[i][1][i2], bin_edges[i][1][i2+1]),
-                #                     (bin_edges[i][2][i3], bin_edges[i][2][i3+1])
-                #                 ))
-                #     intervals_all.append(intervals_all_row)
-                # # (class, feature_idx, low)
-                # intervals_all = np.array(intervals_all)
                 if plot_3d:
                     plot_location = intervals_all.copy()
                     plot_location = plot_location[:, :, 0]
-            # reshaped_intervals_all_inf = intervals_all_inf.reshape(tuple(n_binss+1)+intervals_all_inf.shape[1:])
-            # reshaped_intervals_all = intervals_all.reshape(tuple(n_binss+1)+intervals_all_inf.shape[1:])
 
             if skew:
                 discretised = []
@@ -534,8 +474,6 @@ class ModelTrainer(object):
                         cdf_values.append(0)
                         cdf_values.extend(y)
                         cdf_values.append(1)
-                        # plt.subplot(3,3,i*3+j+1)
-                        # plt.plot(x, 1-y)
                         result = []
                         for v1, v2 in zip(cdf_values[:-1], cdf_values[1:]):
                             result.append(v2 - v1)
@@ -553,11 +491,9 @@ class ModelTrainer(object):
                 probas.append(proba_row)
             probas = np.transpose(probas)
             probas = probas/probas.sum()
-            # reshaped_probas = probas.reshape(list(n_binss+1) + [3])
 
             ds = IB.dataset(pxy=probas)
 
-            # betas = np.arange(10,160,10)
             betas = [100]
             alpha = 1
             hts = []
@@ -576,19 +512,13 @@ class ModelTrainer(object):
                 iyts.append(metrics_conv["iyt"][0])
                 htxs.append(metrics_conv["ht_x"][0])
 
-                # dist_conv.to_csv("disct_conv.csv")
                 result = np.array(dist_conv["qt_x"][0])
-                # pickle.dump(dist_conv["qt_x"], open("dist_conv.p", "w"))
-                # print(list(dist_conv["qt_x"][0][0]))
-                # print(list(dist_conv["qt_x"][0][1]))
-                # print(list(dist_conv["qt_x"][0][2]))
 
                 result_label = np.zeros(result.shape[1])-1
                 result_label[np.where(result[0] == 1)] = 0
                 result_label[np.where(result[1] == 1)] = 1
                 result_label[np.where(result[2] == 1)] = 2
 
-                # result_label = np.argmax(result, axis=0)
 
                 if ds.zx is not None:
                     result_full_label = np.zeros(probas.shape[0])
@@ -628,17 +558,13 @@ class ModelTrainer(object):
                 thresh_ranges = [(0,1), (14,28), (63,126), (172,344), (365,730)]
                 for shift in [0,1,2,3,4]:
                     for thresh in range(*thresh_ranges[shift]):
-                        # predicted_training_labels = map(lambda x: self.classify3(intervals_all, intervals_all_inf, result_full_label+1, x), features)
                         predicted_training_labels = map(lambda x: self.classify3new(intervals_inf, reshape_result_full_label+1, shift, thresh, x), features)
-                        # print("asd", all(a==b for a,b in zip(predicted_training_labels,predicted_training_labels1)))
                         training_confusion_matrix = sklearn.metrics.confusion_matrix(all_training_lables,
                                                                                      predicted_training_labels,
                                                                                      labels=[1,2,3,0])
 
                         permutations = [[0,1,2,3], [1,2,0,3], [2,0,1,3], [0,2,1,3], [1,0,2,3], [2,1,0,3]]
                         itrss = [self.calculateAccuracyIgnoringLastColumn(training_confusion_matrix[:,perm]) for perm in permutations]
-                        # itrss = [self.itr_calculator_prob.itrBitPerTrial(self.calculateAccuracyIgnoringLastColumn(training_confusion_matrix[:,perm])) for perm in permutations]
-                        # itrss = [self.calculate_mi(training_confusion_matrix[:,perm]) for perm in permutations]
                         best_itr = np.argmax(itrss)
                         best_perm = permutations[best_itr]
 
