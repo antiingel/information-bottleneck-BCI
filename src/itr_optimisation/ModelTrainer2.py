@@ -14,7 +14,7 @@ import pickle
 import collections
 import itertools
 
-from strouse_ib import IB
+import IB
 import CvCalibrationModel
 import ItrCalculatorProb
 import time

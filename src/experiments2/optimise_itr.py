@@ -12,7 +12,6 @@ electrodes = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 feature_names = ["1_('O1', 'O2')_CCA_('O1', 'O2')_Sum_" + str(frequency) for frequency in frequencies]
 
-ens = "0"
 n_classes = 3
 
 for subject in subjects:
@@ -20,8 +19,8 @@ for subject in subjects:
     all_data_for_subject = []
     labels_for_subject = []
     for recording in recordings:
-        input_file_name = os.path.join(os.pardir, os.pardir, "dataset2", "feature_data", "sub" + subject + "rec" + recording + ".mat")
-        data = scipy.io.loadmat(input_file_name)["rhos"]  # (22, 40, 40) = (sample, correct_class, predicted_class)
+        input_file_name = os.path.join(os.pardir, os.pardir, "dataset2", "S" + subject + "_cv_" + recording + "_ens_0.mat")
+        data = scipy.io.loadmat(input_file_name)["rhos"]  # (22, 40, 40) = (sample, correct_class, class_feature)
         n_samples = data.shape[0]
         data = np.concatenate(tuple(data[:,c,:n_classes] for c in range(n_classes)))
         labels = np.concatenate([[j] * n_samples for j in range(n_classes)])
