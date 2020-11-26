@@ -20,7 +20,7 @@ for subject in subjects:
     all_data_for_subject = []
     labels_for_subject = []
     for recording in recordings:
-        input_file_name = os.path.join(os.pardir, os.pardir, "data", "feature_data", "sub" + subject + "rec" + recording + ".csv")
+        input_file_name = os.path.join(os.pardir, os.pardir, "dataset1", "feature_data", "sub" + subject + "rec" + recording + ".csv")
         data = pd.read_csv(input_file_name)
         features = data.iloc[:, 1:16].as_matrix()
         labels = data["label"].as_matrix()

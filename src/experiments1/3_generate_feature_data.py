@@ -52,8 +52,8 @@ def getReferenceSignals(length, frequencies, all_harmonics):
 
 for subject in subjects:
     for recording in recordings:
-        input_file_path = os.path.join(os.pardir, "data", "eeg_data", "sub" + subject + "rec" + recording + ".csv")
-        output_file_path = os.path.join(os.pardir, "data", "feature_data", "sub" + subject + "rec" + recording + ".csv")
+        input_file_path = os.path.join(os.pardir, os.pardir, "dataset1", "eeg_data", "sub" + subject + "rec" + recording + ".csv")
+        output_file_path = os.path.join(os.pardir, os.pardir, "dataset1", "feature_data", "sub" + subject + "rec" + recording + ".csv")
         all_data = pd.read_csv(input_file_path)
         eeg_data = all_data.as_matrix(["A15 (O1)", "A28 (O2)"])
         label_data = all_data.as_matrix(["label"])
