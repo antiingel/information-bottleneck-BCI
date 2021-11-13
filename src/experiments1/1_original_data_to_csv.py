@@ -11,9 +11,9 @@ electrodes = ['A1 (Cz)', 'A2', 'A3 (CPz)', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', '
 
 for frequency in frequencies:
     for subject in subjects:
-        output_folder_path = os.path.join(os.pardir, os.pardir, "dataset1", "original_data_as_csv")
+        output_folder_path = os.path.join(os.pardir, os.pardir, "data", "original_data_as_csv")
         for trial in trials:
-            input_file_path = os.path.join(os.pardir, os.pardir, "dataset1", "original_data", "SSVEP_" + frequency + "Hz_Trial" + trial + "_SUBJ" + subject +".MAT")
+            input_file_path = os.path.join(os.pardir, os.pardir, "data", "original_data", "SSVEP_" + frequency + "Hz_Trial" + trial + "_SUBJ" + subject +".MAT")
             data = scipy.io.loadmat(input_file_path)
             transposed_eeg_data = pd.DataFrame(np.transpose(data["EEGdata"]), columns=electrodes)
             file_name = frequency + "sub" + subject + "trial" + trial + ".csv"
