@@ -31,12 +31,6 @@ use_ens = False
 
 for subject in subjects:
 
-    all_data_for_subject, labels_for_subject = read_data(subject, recordings, start_class, "data2", n_classes, use_ens)
-
-    n_trials, n_samples, n_features = all_data_for_subject.shape
-
-    assert n_classes == len(np.unique(labels_for_subject))
-
     lda_model = LinearDiscriminantAnalysis()
 
     feature_selector = SelectFpr(alpha=5e-2 if do_feature_selection else 1)
@@ -48,7 +42,14 @@ for subject in subjects:
     mi_itrs = []
     prediction_count = []
 
-    for cv_index in range(n_trials):
+    for cv_index in range(6):
+
+        all_data_for_subject, labels_for_subject = read_data(subject, recordings, start_class, cv_index, "data2", n_classes, use_ens)
+
+        n_trials, n_samples, n_features = all_data_for_subject.shape
+
+        assert n_trials == 6
+        assert n_classes == len(np.unique(labels_for_subject))
 
         training_data = np.delete(all_data_for_subject, cv_index, 0).copy()
         test_data = all_data_for_subject[cv_index,:,:].copy()

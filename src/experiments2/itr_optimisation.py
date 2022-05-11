@@ -96,11 +96,11 @@ def prediction_probability_from_confusion_matrix(confusion_matrix):
     return (confusion_matrix.sum()-confusion_matrix.sum(axis=0)[-1])/confusion_matrix.sum()
 
 
-def read_data(subject, recordings, start_class, data_folder, n_classes, use_ens):
+def read_data(subject, recordings, start_class, cv_index, data_folder, n_classes, use_ens):
     all_data_for_subject = []
     labels_for_subject = []
     for recording in recordings:
-        input_file_name = os.path.join(os.pardir, os.pardir, data_folder, "S" + subject + "_cv_" + recording + "_ens_" + str(int(use_ens)) + ".mat")
+        input_file_name = os.path.join(os.pardir, os.pardir, data_folder, "S" + subject + "_cv_" + str(cv_index+1) + "_" + recording + "_ens_" + str(int(use_ens)) + ".mat")
         features = loadmat(input_file_name)["rhos"]
         n_samples = features.shape[0]
         features = np.concatenate(tuple(features[:,c,start_class:start_class+n_classes] for c in range(start_class, start_class + n_classes)))
