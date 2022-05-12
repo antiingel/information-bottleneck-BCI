@@ -240,8 +240,8 @@ def plot_3d(bin_edges, result_full_label, n_classes, do_3d_plot):
 def train_classifier(alpha, beta, probas, n_classes):
     ds = IB.dataset(pxy=probas)
 
-    fit_param = pd.DataFrame(data={'alpha': [alpha], 'zeroLtol': float("inf"), 'Tmax': 3, 'clamp': False,
-                                   'betas': [beta], 'beta_search': False})
+    fit_param = pd.DataFrame(data={'alpha': [alpha], 'zeroLtol': float("inf"), 'Tmax': n_classes, 'clamp': False,
+                                   'betas': [beta], 'beta_search': False, "ptol": 10**-16})
     fit_param['repeats'] = 1
     metrics_conv, dist_conv, metrics_sw, dist_sw = IB.IB(ds, fit_param, keep_steps=False, sw_dist_to_keep={})
 
