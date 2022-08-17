@@ -30,3 +30,7 @@ Before trying to run the code, please download the required dataset from [here](
 Extract `data2` folder to the same folder that contains `src`. Now optimisation procedure can be run using the script `experiments2/optimise_itr.py`.
 
 Downloaded features can also be calculated from the original dataset. For that code from [this repository](https://github.com/mnakanishi/TRCA-SSVEP) was used.
+
+## Contact
+
+For additional information, feel free to contact Anti Ingel (antiingel@gmail.com).
