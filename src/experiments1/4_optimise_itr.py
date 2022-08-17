@@ -7,20 +7,22 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 subjects = [str(i+1) for i in range(4)]
 recordings = [str(i+1) for i in range(5)]
 
+np.random.seed(200)
 
 n_classes = 3
 window_length = 1
 step_length = 0.125
 
 n_bins = None
-shift = 4
-thresh = 600
+shift_and_thresh = {"1": (2, 125), "2": (4, 668), "3": (4, 680), "4": (4, 710)}
 
 do_feature_selection = False
-add_ratios = True
+add_ratios = False
 do_lda = True
 do_lda_separately = True
 do_skew_norm_plots = False
+
+treat_as_online_signal = True
 
 use_skew = True
 do_3d_plot = False
@@ -38,9 +40,11 @@ for subject in subjects:
 
     feature_selector = SelectFpr(alpha=5e-2 if do_feature_selection else 1)
 
+    shift, thresh = shift_and_thresh[subject]
+
     accuracies = []
     mdts = []
-    prediction_probabilities = []
+    prediction_counts = []
     standard_itrs = []
     mi_itrs = []
     prediction_count = []
@@ -80,27 +84,19 @@ for subject in subjects:
 
         best_perm = find_label_permutation(classifier, train_features_given_class, training_labels, bin_edges, shift, thresh, n_classes)
 
-        predicted_testing_labels = list(map(lambda x: predict(bin_edges, classifier + 1, shift, thresh, x, n_classes), new_test_features))
-
-        testing_confusion_matrix = sklearn.metrics.confusion_matrix(
-            test_labels,
-            predicted_testing_labels,
-            labels=[i + 1 for i in range(n_classes)] + [0]
+        mi_itr, standard_itr, accuracy, mdt, prediction_count = evaluate_performance(
+            new_test_features, classifier, bin_edges, best_perm, shift, thresh, test_labels, n_classes, window_length, step_length, n_samples, treat_as_online_signal
         )
 
-        testing_confusion_matrix = testing_confusion_matrix[:,best_perm]
-        prediction_probability = prediction_probability_from_confusion_matrix(testing_confusion_matrix)
-
-        mi_itrs.append(itr_mi_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes))
-        standard_itrs.append(standard_itr_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes))
-        accuracies.append(accuracy_from_confusion_matrix(testing_confusion_matrix))
-        mdts.append(mdt_from_prediction_prob(prediction_probability, window_length, step_length))
-        prediction_probabilities.append(prediction_probability)
-        prediction_count.append(testing_confusion_matrix.sum() - testing_confusion_matrix.sum(axis=0)[-1])
+        accuracies.append(accuracy)
+        prediction_counts.append(prediction_count)
+        mi_itrs.append(mi_itr)
+        standard_itrs.append(standard_itr)
+        mdts.append(mdt)
 
     print("Results for subject " + str(subject) + ":")
     print(np.mean(accuracies), accuracies)
     print(np.mean(mdts), mdts)
     print(np.mean(mi_itrs), mi_itrs)
     print(np.mean(standard_itrs), standard_itrs)
-    print(np.mean(prediction_probabilities), prediction_probabilities)
+    print(np.mean(prediction_counts), prediction_counts)

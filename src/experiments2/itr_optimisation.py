@@ -319,11 +319,69 @@ def calculate_bin_edges(train_features_given_class, method, n_classes, n_bins):
 
 def get_shift_and_thresh(n_classes):
     if n_classes == 3:
-        shift = 1
-        thresh = 25
+        return {
+            '1': (2, 87), '2': (1, 26), '3': (2, 116), '4': (2, 89), '5': (1, 19), '6': (2, 100), '7': (2, 109),
+            '8': (1, 23), '9': (2, 91), '10': (2, 81), '11': (2, 81), '12': (2, 105), '13': (2, 90), '14': (2, 101),
+            '15': (2, 90), '16': (2, 88), '17': (1, 24), '18': (2, 94), '19': (1, 22), '20': (2, 106), '21': (1, 23),
+            '22': (1, 23), '23': (2, 100), '24': (1, 20), '25': (2, 108), '26': (2, 108), '27': (1, 19), '28': (2, 107),
+            '29': (1, 25), '30': (2, 93), '31': (1, 14), '32': (1, 25), '33': (1, 16), '34': (1, 25), '35': (2, 93)
+        }
     elif n_classes == 4:
-        shift = 1
-        thresh = 70
+        return {
+            '1': (2, 491), '2': (2, 524), '3': (2, 477), '4': (0, 0), '5': (2, 490), '6': (1, 74), '7': (1, 64),
+            '8': (2, 353), '9': (1, 61), '10': (1, 66), '11': (2, 387), '12': (1, 59), '13': (1, 63), '14': (1, 73),
+            '15': (1, 58), '16': (2, 441), '17': (1, 73), '18': (2, 466), '19': (1, 62), '20': (1, 73), '21': (1, 73),
+            '22': (1, 76), '23': (2, 449), '24': (2, 397), '25': (2, 443), '26': (2, 546), '27': (1, 68), '28': (2, 355),
+            '29': (1, 77), '30': (2, 415), '31': (2, 500), '32': (2, 442), '33': (1, 51), '34': (1, 71), '35': (2, 422)
+        }
     else:
         raise Exception("Set shift and thresh manually for " + str(n_classes) + " classes")
-    return shift, thresh
+
+
+def evaluate_performance(new_test_features, classifier, bin_edges, best_perm, shift, thresh, test_labels, n_classes, window_length, step_length, length, treat_as_online):
+    if treat_as_online:
+
+        test_predictions = []
+        test_correct_labels = []
+        i = 0
+        while i < len(test_labels):
+            current_features = new_test_features[i]
+            current_label = test_labels[i]
+            test_prediction = predict(bin_edges, classifier + 1, shift, thresh, current_features, n_classes)
+            if test_prediction != 0:
+                test_predictions.append(test_prediction)
+                test_correct_labels.append(current_label)
+                i += int(0.5 / step_length)
+                if i < len(test_labels) and test_labels[i] != current_label:
+                    i = np.where(test_labels == test_labels[i])[0][0]
+            else:
+                test_predictions.append(test_prediction)
+                test_correct_labels.append(current_label)
+                i += 1
+        test_confusion_matrix = sklearn.metrics.confusion_matrix(test_correct_labels, test_predictions, labels=[i + 1 for i in range(n_classes)] + [0])
+        test_confusion_matrix = test_confusion_matrix[:,best_perm]
+
+        prediction_count = np.sum(np.array(test_predictions) != 0)
+        accuracy = accuracy_from_confusion_matrix(test_confusion_matrix)
+        mdt = length / prediction_count
+        mi_itr = mi_from_confusion_matrix(test_confusion_matrix, n_classes) * 60 / mdt
+        standard_itr = standard_itr_per_trial(accuracy, n_classes) * 60 / mdt
+    else:
+        predicted_testing_labels = list(map(lambda x: predict(bin_edges, classifier + 1, shift, thresh, x, n_classes), new_test_features))
+
+        testing_confusion_matrix = sklearn.metrics.confusion_matrix(
+            test_labels,
+            predicted_testing_labels,
+            labels=[i + 1 for i in range(n_classes)] + [0]
+        )
+
+        testing_confusion_matrix = testing_confusion_matrix[:,best_perm]
+        prediction_probability = prediction_probability_from_confusion_matrix(testing_confusion_matrix)
+
+        mi_itr = itr_mi_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes)
+        standard_itr = standard_itr_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes)
+        accuracy = accuracy_from_confusion_matrix(testing_confusion_matrix)
+        mdt = mdt_from_prediction_prob(prediction_probability, window_length, step_length)
+        prediction_count = testing_confusion_matrix.sum() - testing_confusion_matrix.sum(axis=0)[-1]
+
+    return mi_itr, standard_itr, accuracy, mdt, prediction_count

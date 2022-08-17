@@ -317,3 +317,50 @@ def calculate_bin_edges(train_features_given_class, method, n_classes, n_bins):
     return n_edges, bin_edges
 
 
+def evaluate_performance(new_test_features, classifier, bin_edges, best_perm, shift, thresh, test_labels, n_classes, window_length, step_length, n_samples, treat_as_online):
+    if treat_as_online:
+
+        test_predictions = []
+        test_correct_labels = []
+        i = 0
+        while i < len(test_labels):
+            current_features = new_test_features[i]
+            current_label = test_labels[i]
+            test_prediction = predict(bin_edges, classifier + 1, shift, thresh, current_features, n_classes)
+            if test_prediction != 0:
+                test_predictions.append(test_prediction)
+                test_correct_labels.append(current_label)
+                i += int(window_length / step_length)
+                if i < len(test_labels) and test_labels[i] != current_label:
+                    i = np.where(test_labels == test_labels[i])[0][0]
+            else:
+                test_predictions.append(test_prediction)
+                test_correct_labels.append(current_label)
+                i += 1
+        test_confusion_matrix = sklearn.metrics.confusion_matrix(test_correct_labels, test_predictions, labels=[i + 1 for i in range(n_classes)] + [0])
+        test_confusion_matrix = test_confusion_matrix[:,best_perm]
+
+        prediction_count = np.sum(np.array(test_predictions) != 0)
+        accuracy = accuracy_from_confusion_matrix(test_confusion_matrix)
+        mdt = (n_samples * step_length + (window_length - step_length) * n_classes) / prediction_count
+        mi_itr = mi_from_confusion_matrix(test_confusion_matrix, n_classes) * 60 / mdt
+        standard_itr = standard_itr_per_trial(accuracy, n_classes) * 60 / mdt
+    else:
+        predicted_testing_labels = list(map(lambda x: predict(bin_edges, classifier + 1, shift, thresh, x, n_classes), new_test_features))
+
+        testing_confusion_matrix = sklearn.metrics.confusion_matrix(
+            test_labels,
+            predicted_testing_labels,
+            labels=[i + 1 for i in range(n_classes)] + [0]
+        )
+
+        testing_confusion_matrix = testing_confusion_matrix[:,best_perm]
+        prediction_probability = prediction_probability_from_confusion_matrix(testing_confusion_matrix)
+
+        mi_itr = itr_mi_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes)
+        standard_itr = standard_itr_from_confusion_matrix(testing_confusion_matrix, window_length, step_length, n_classes)
+        accuracy = accuracy_from_confusion_matrix(testing_confusion_matrix)
+        mdt = mdt_from_prediction_prob(prediction_probability, window_length, step_length)
+        prediction_count = testing_confusion_matrix.sum() - testing_confusion_matrix.sum(axis=0)[-1]
+
+    return mi_itr, standard_itr, accuracy, mdt, prediction_count
